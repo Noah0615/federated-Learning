@@ -1,0 +1,17 @@
+ARG FLWR_VERSION=1.34.0
+FROM flwr/superexec:${FLWR_VERSION}
+
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential \
+    && rm -rf /var/lib/apt/lists/*
+USER app
+
+WORKDIR /app
+COPY app/pyproject.toml ./
+COPY app/challenge ./challenge
+COPY app/attackers ./attackers
+RUN python -m pip install --no-cache-dir .
+
+ENTRYPOINT ["flower-superexec"]
+

@@ -1,0 +1,183 @@
+name: fl-challenge-telemetry
+
+x-flower-version: &flower-version ${FLWR_VERSION:-1.34.0}
+x-superexec-build: &superexec-build
+  build:
+    context: .
+    dockerfile: docker/superexec.Dockerfile
+    args:
+      FLWR_VERSION: *flower-version
+
+x-supernode: &supernode
+  image: flwr/supernode:${FLWR_VERSION:-1.34.0}
+  command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process]
+  depends_on: [superlink]
+  networks: [fl-net]
+  restart: unless-stopped
+
+x-client-exec: &client-exec
+  <<: *superexec-build
+  command: [--insecure, --plugin-type, clientapp]
+  environment:
+    DATA_ROOT: ${DATA_ROOT:-/data}
+    RESULTS_DIR: ${RESULTS_DIR:-/results}
+  volumes:
+    - mnist-cache:/data
+    - ./results:/results
+  networks: [fl-net]
+  restart: unless-stopped
+
+services:
+  superlink:
+    image: flwr/superlink:${FLWR_VERSION:-1.34.0}
+    command: [--insecure, --isolation, process]
+    ports:
+      - "127.0.0.1:9091:9091"
+      - "127.0.0.1:9092:9092"
+      - "127.0.0.1:9093:9093"
+    networks: [fl-net]
+    restart: unless-stopped
+
+  superexec-serverapp:
+    <<: *superexec-build
+    command: [--insecure, --plugin-type, serverapp, --appio-api-address, superlink:9091]
+    environment:
+      RESULTS_DIR: ${RESULTS_DIR:-/results}
+      NODE_ROLE_MAP: honest-1:honest,honest-2:honest,honest-3:honest,honest-4:honest,honest-5:honest,honest-gpu:honest,evil-precompute:evil_precompute
+    volumes:
+      - ./results:/results
+    depends_on: [superlink]
+    networks: [fl-net]
+    restart: unless-stopped
+
+  supernode-honest-1:
+    <<: *supernode
+    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, "partition-id=0 num-partitions=${NUM_PARTITIONS:-5} node-identity=honest-1"]
+  supernode-honest-2:
+    <<: *supernode
+    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, "partition-id=1 num-partitions=${NUM_PARTITIONS:-5} node-identity=honest-2"]
+  supernode-honest-3:
+    <<: *supernode
+    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, "partition-id=2 num-partitions=${NUM_PARTITIONS:-5} node-identity=honest-3"]
+  supernode-honest-4:
+    <<: *supernode
+    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, "partition-id=3 num-partitions=${NUM_PARTITIONS:-5} node-identity=honest-4"]
+  supernode-evil:
+    <<: *supernode
+    profiles: [attack]
+    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, "partition-id=4 num-partitions=${NUM_PARTITIONS:-5} node-identity=evil-precompute"]
+
+  supernode-honest-5:
+    <<: *supernode
+    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, "partition-id=4 num-partitions=${NUM_PARTITIONS:-5} node-identity=honest-5"]
+
+  supernode-gpu:
+    <<: *supernode
+    profiles: [gpu]
+    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, "partition-id=5 num-partitions=${NUM_PARTITIONS:-6} node-identity=honest-gpu"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+
+  superexec-clientapp-1:
+    <<: *client-exec
+    command: [--insecure, --plugin-type, clientapp, --appio-api-address, supernode-honest-1:9094]
+    environment: {NODE_IDENTITY: honest-1, ATTACK_MODE: honest}
+    depends_on: [supernode-honest-1]
+  superexec-clientapp-2:
+    <<: *client-exec
+    command: [--insecure, --plugin-type, clientapp, --appio-api-address, supernode-honest-2:9094]
+    environment: {NODE_IDENTITY: honest-2, ATTACK_MODE: honest}
+    depends_on: [supernode-honest-2]
+  superexec-clientapp-3:
+    <<: *client-exec
+    command: [--insecure, --plugin-type, clientapp, --appio-api-address, supernode-honest-3:9094]
+    environment: {NODE_IDENTITY: honest-3, ATTACK_MODE: honest}
+    depends_on: [supernode-honest-3]
+  superexec-clientapp-4:
+    <<: *client-exec
+    command: [--insecure, --plugin-type, clientapp, --appio-api-address, supernode-honest-4:9094]
+    environment: {NODE_IDENTITY: honest-4, ATTACK_MODE: honest}
+    depends_on: [supernode-honest-4]
+  superexec-clientapp-5:
+    <<: *client-exec
+    command: [--insecure, --plugin-type, clientapp, --appio-api-address, supernode-honest-5:9094]
+    environment: {NODE_IDENTITY: honest-5, ATTACK_MODE: honest}
+    depends_on: [supernode-honest-5]
+  superexec-evil:
+    <<: *client-exec
+    profiles: [attack]
+    command: [--insecure, --plugin-type, clientapp, --appio-api-address, supernode-evil:9094]
+    environment: {NODE_IDENTITY: evil-precompute, ATTACK_MODE: precompute}
+    depends_on: [supernode-evil]
+  superexec-gpu:
+    <<: *client-exec
+    profiles: [gpu]
+    command: [--insecure, --plugin-type, clientapp, --appio-api-address, supernode-gpu:9094]
+    environment: {NODE_IDENTITY: honest-gpu, ATTACK_MODE: honest}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+    depends_on: [supernode-gpu]
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.2
+    profiles: [monitoring]
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks: [fl-net]
+  dcgm-exporter:
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.9-3.6.0-ubuntu22.04
+    profiles: [gpu]
+    gpus: all
+    cap_add: [SYS_ADMIN]
+    networks: [fl-net]
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    profiles: [monitoring]
+    ports: ["127.0.0.1:9090:9090"]
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks: [fl-net]
+    depends_on: [cadvisor]
+  grafana:
+    image: grafana/grafana:11.1.0
+    profiles: [monitoring]
+    ports: ["127.0.0.1:3000:3000"]
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/dashboards:/var/lib/grafana/dashboards:ro
+      - ./monitoring/grafana-datasource.yaml:/etc/grafana/provisioning/datasources/telemetry.yaml:ro
+      - ./monitoring/grafana-dashboard-provider.yaml:/etc/grafana/provisioning/dashboards/telemetry.yaml:ro
+    networks: [fl-net]
+    depends_on: [prometheus]
+  jupyter:
+    image: jupyter/scipy-notebook:python-3.11
+    profiles: [analysis]
+    ports: ["127.0.0.1:8888:8888"]
+    command: [start-notebook.py, --NotebookApp.token=]
+    volumes:
+      - ./notebooks:/home/jovyan/work/notebooks
+      - ./results:/home/jovyan/work/results
+    networks: [fl-net]
+
+networks:
+  fl-net:
+    driver: bridge
+volumes:
+  mnist-cache:
+  prometheus-data:
+  grafana-data:

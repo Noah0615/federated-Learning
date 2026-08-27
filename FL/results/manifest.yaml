@@ -1,0 +1,10 @@
+# Per-run manifests are created by ServerApp under results/<run_id>/manifest.yaml.
+# This file keeps the results directory in version control.
+node_roles:
+  honest-1: honest
+  honest-2: honest
+  honest-3: honest
+  honest-4: honest
+  honest-5: honest
+  honest-gpu: honest
+  evil-precompute: evil_precompute

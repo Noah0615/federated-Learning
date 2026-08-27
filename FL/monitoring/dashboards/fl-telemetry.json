@@ -1,0 +1,25 @@
+{
+  "title": "FL Challenge Telemetry",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Container CPU usage",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "targets": [
+        {"expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name=~\".*super.*\"}[1m]))", "legendFormat": "{{name}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "GPU utilization",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+      "targets": [
+        {"expr": "DCGM_FI_DEV_GPU_UTIL", "legendFormat": "GPU {{gpu}}"}
+      ]
+    }
+  ]
+}
+

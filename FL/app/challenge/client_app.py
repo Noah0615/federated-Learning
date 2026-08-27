@@ -1,4 +1,3 @@
-"""Flower ClientApp for honest MNIST training and the controlled attacker."""
 
 from __future__ import annotations
 
@@ -8,9 +7,9 @@ import os
 import time
 
 import torch
+from flwr.clientapp import ClientApp
 from flwr.app import (
     ArrayRecord,
-    ClientApp,
     ConfigRecord,
     Context,
     Message,

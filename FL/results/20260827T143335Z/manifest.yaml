@@ -1,0 +1,10 @@
+run_id: 20260827T143335Z
+node_roles:
+  honest-1: honest
+  honest-2: honest
+  honest-3: honest
+  honest-4: honest
+  honest-5: honest
+  honest-gpu: honest
+  evil-precompute: evil_precompute
+ground_truth: controlled deployment mapping; do not use as a detector feature

@@ -19,7 +19,7 @@ x-client-exec: &client-exec
   <<: *superexec-build
   command: [--insecure, --plugin-type, clientapp]
   environment:
-    DATA_ROOT: ${DATA_ROOT:-/data}
+    DATA_ROOT: /tmp/data
     RESULTS_DIR: ${RESULTS_DIR:-/results}
   volumes:
     - mnist-cache:/data
@@ -52,29 +52,29 @@ services:
 
   supernode-honest-1:
     <<: *supernode
-    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, "partition-id=0 num-partitions=${NUM_PARTITIONS:-5} node-identity=honest-1"]
+    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, 'partition-id=0 num-partitions=${NUM_PARTITIONS:-5} node-identity="honest-1"']
   supernode-honest-2:
     <<: *supernode
-    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, "partition-id=1 num-partitions=${NUM_PARTITIONS:-5} node-identity=honest-2"]
+    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, 'partition-id=1 num-partitions=${NUM_PARTITIONS:-5} node-identity="honest-2"']
   supernode-honest-3:
     <<: *supernode
-    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, "partition-id=2 num-partitions=${NUM_PARTITIONS:-5} node-identity=honest-3"]
+    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, 'partition-id=2 num-partitions=${NUM_PARTITIONS:-5} node-identity="honest-3"']
   supernode-honest-4:
     <<: *supernode
-    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, "partition-id=3 num-partitions=${NUM_PARTITIONS:-5} node-identity=honest-4"]
+    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, 'partition-id=3 num-partitions=${NUM_PARTITIONS:-5} node-identity="honest-4"']
   supernode-evil:
     <<: *supernode
     profiles: [attack]
-    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, "partition-id=4 num-partitions=${NUM_PARTITIONS:-5} node-identity=evil-precompute"]
+    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, 'partition-id=4 num-partitions=${NUM_PARTITIONS:-5} node-identity="evil-precompute"']
 
   supernode-honest-5:
     <<: *supernode
-    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, "partition-id=4 num-partitions=${NUM_PARTITIONS:-5} node-identity=honest-5"]
+    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, 'partition-id=4 num-partitions=${NUM_PARTITIONS:-5} node-identity="honest-5"']
 
   supernode-gpu:
     <<: *supernode
     profiles: [gpu]
-    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, "partition-id=5 num-partitions=${NUM_PARTITIONS:-6} node-identity=honest-gpu"]
+    command: [--insecure, --superlink, superlink:9092, --clientappio-api-address, 0.0.0.0:9094, --isolation, process, --node-config, 'partition-id=5 num-partitions=${NUM_PARTITIONS:-6} node-identity="honest-gpu"']
     deploy:
       resources:
         reservations:
@@ -86,39 +86,60 @@ services:
   superexec-clientapp-1:
     <<: *client-exec
     command: [--insecure, --plugin-type, clientapp, --appio-api-address, supernode-honest-1:9094]
-    environment: {NODE_IDENTITY: honest-1, ATTACK_MODE: honest}
+    environment:
+      DATA_ROOT: /tmp/data
+      NODE_IDENTITY: honest-1
+      ATTACK_MODE: honest
     depends_on: [supernode-honest-1]
   superexec-clientapp-2:
     <<: *client-exec
     command: [--insecure, --plugin-type, clientapp, --appio-api-address, supernode-honest-2:9094]
-    environment: {NODE_IDENTITY: honest-2, ATTACK_MODE: honest}
+    environment:
+      DATA_ROOT: /tmp/data
+      NODE_IDENTITY: honest-2
+      ATTACK_MODE: honest
     depends_on: [supernode-honest-2]
   superexec-clientapp-3:
     <<: *client-exec
     command: [--insecure, --plugin-type, clientapp, --appio-api-address, supernode-honest-3:9094]
-    environment: {NODE_IDENTITY: honest-3, ATTACK_MODE: honest}
+    environment:
+      DATA_ROOT: /tmp/data
+      NODE_IDENTITY: honest-3
+      ATTACK_MODE: honest
     depends_on: [supernode-honest-3]
   superexec-clientapp-4:
     <<: *client-exec
     command: [--insecure, --plugin-type, clientapp, --appio-api-address, supernode-honest-4:9094]
-    environment: {NODE_IDENTITY: honest-4, ATTACK_MODE: honest}
+    environment:
+      DATA_ROOT: /tmp/data
+      NODE_IDENTITY: honest-4
+      ATTACK_MODE: honest
     depends_on: [supernode-honest-4]
   superexec-clientapp-5:
     <<: *client-exec
     command: [--insecure, --plugin-type, clientapp, --appio-api-address, supernode-honest-5:9094]
-    environment: {NODE_IDENTITY: honest-5, ATTACK_MODE: honest}
+    environment:
+      DATA_ROOT: /tmp/data
+      NODE_IDENTITY: honest-5
+      ATTACK_MODE: honest
     depends_on: [supernode-honest-5]
   superexec-evil:
     <<: *client-exec
     profiles: [attack]
     command: [--insecure, --plugin-type, clientapp, --appio-api-address, supernode-evil:9094]
-    environment: {NODE_IDENTITY: evil-precompute, ATTACK_MODE: precompute}
+    environment:
+      DATA_ROOT: /tmp/data
+      NODE_IDENTITY: evil-precompute
+      ATTACK_MODE: precompute
     depends_on: [supernode-evil]
   superexec-gpu:
     <<: *client-exec
     profiles: [gpu]
     command: [--insecure, --plugin-type, clientapp, --appio-api-address, supernode-gpu:9094]
-    environment: {NODE_IDENTITY: honest-gpu, ATTACK_MODE: honest}
+    environment:
+      DATA_ROOT: /tmp/data
+      NODE_IDENTITY: honest-gpu
+      ATTACK_MODE: honest
     deploy:
       resources:
         reservations:
